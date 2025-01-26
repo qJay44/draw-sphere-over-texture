@@ -2,14 +2,10 @@
 cls
 
 Rem Build
-cmake -S . -B Build -G "Visual Studio 17 2022"
-cmake --build Build --config Release
-
-Rem Copy dlls
-cd Build\\Release
-if not exist Run mkdir Run
-cd Run
-move /y ..\\MyProject.exe .
+cmake -S . -B Build\\Release -G "MinGW Makefiles" -D CMAKE_EXPORT_COMPILE_COMMANDS=ON -D CMAKE_BUILD_TYPE=Release
+cmake --build Build\\Release --config Release
+cd Build\\Release\\Run
+move /y ..\\compile_commands.json ..\..
 
 Rem Lauch
 MyProject.exe

@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.21)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Run)
 
 project(MyProject VERSION 1.0)
 
@@ -25,7 +26,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_directories(${PROJECT_NAME} PUBLIC
   ${GLM_PATH}/bin
   ${GLM_PATH}/lib
-  ${GLFW_PATH}/lib-vc2022
+  ${GLFW_PATH}/lib-mingw-w64
 )
 
 target_link_libraries(${PROJECT_NAME} glfw3 glm)
