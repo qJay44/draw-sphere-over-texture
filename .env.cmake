@@ -1,0 +1,5 @@
+set(MINGW64_PATH "C:/Users/q44/Documents/Libs/mingw64/bin")
+set(GLAD_PATH "C:/Users/q44/Documents/Libs/glad")
+set(GLM_PATH "C:/Users/q44/Documents/Libs/glm/install")
+set(GLFW_PATH "C:/Users/q44/Documents/Libs/glfw-3.4")
+set(GENERAL_INCLUDES "C:/Users/q44/Documents/Libs/!General/include")
