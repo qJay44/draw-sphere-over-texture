@@ -1,5 +1,6 @@
 #include "ComputeShader.hpp"
 
+#include <format>
 #include <fstream>
 #include <sstream>
 
@@ -33,8 +34,8 @@ static GLuint compile(const fspath& filename, int type) {
   if (!hasCompiled) {
     glGetShaderInfoLog(shaderId, 1'024, NULL, infoLog);
     std::string fmt = clrp::prepare(clrp::ATTRIBUTE::BOLD, clrp::FG::RED);
-    printf("\nShader: %s\n", filename.string().c_str());
-    printf(fmt.c_str(), "\n===== Shader compilation error =====\n\n");
+    std::string head = std::format("\n===== Shader compilation error ({}) =====\n\n", filename.string().c_str());
+    printf(fmt.c_str(), head.c_str());
     puts(infoLog);
     printf(fmt.c_str(), "====================================\n");
   }
@@ -88,5 +89,10 @@ Shader::Shader(const fspath& path) {
 
 void Shader::use() const {
   glUseProgram(program);
+}
+
+void Shader::setUniform3f(const std::string& name, const vec3& v) const {
+  use();
+  glUniform3f(glGetUniformLocation(program, name.c_str()), v.x, v.y, v.z);
 }
 
