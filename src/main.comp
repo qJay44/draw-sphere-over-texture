@@ -2,23 +2,37 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(rgba32f, binding = 0) uniform image2D image;
+layout(binding = 1) uniform sampler2D diffuse0;
 
 layout(location = 0) uniform vec3 normal;
 layout(location = 1) uniform vec3 color;
 
 #define PI 3.141592265359f
 
+vec3 axisA = vec3(normal.y, normal.z, normal.x);
+vec3 axisB = cross(normal, axisA);
+
+vec3 pointOnSphereFancy(vec3 v) {
+  float x2 = v.x * v.x;
+  float y2 = v.y * v.y;
+  float z2 = v.z * v.z;
+  float x = v.x * sqrt(1.f - (y2 + z2) * 0.5f + (y2 * z2) / 3.f);
+  float y = v.y * sqrt(1.f - (z2 + x2) * 0.5f + (z2 * x2) / 3.f);
+  float z = v.z * sqrt(1.f - (x2 + y2) * 0.5f + (x2 * y2) / 3.f);
+
+  return vec3(x, y, z);
+}
+
 void main() {
   ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-  vec2 step = vec2((2.f * PI) / gl_NumWorkGroups.x, PI / gl_NumWorkGroups.y);
-  vec2 coordinate = texelCoord * step; // (lon, lat)
-  float z = sin(coordinate.y) * cos(coordinate.x);
-  float y = sin(coordinate.y) * sin(coordinate.x);
-  float x = cos(coordinate.y);
-  vec3 point = vec3(x, y, z);
-  float angle = acos(dot(point, normal) / (length(point) * length(normal)));
-  vec4 col = vec4(color, 1.f / angle);
-  if (col.a < 0.9f) col = imageLoad(image, texelCoord).rgba;
+  vec2 uv = vec2(texelCoord) / gl_NumWorkGroups.xy;
+  vec3 px = (uv.x - 0.5f) * 2.f * axisA;
+  vec3 py = (uv.y - 0.5f) * 2.f * axisB;
+  vec3 point = pointOnSphereFancy(normal + px + py);
+  float lon = 0.5f - atan(point.z, point.x) / (2.f * PI);
+  float lat = 0.5f + asin(point.y) / PI;
+  ivec2 txCoord = ivec2(lon * gl_NumWorkGroups.x, lat * gl_NumWorkGroups.y);
+  vec3 col = vec3(texture(diffuse0, vec2(lon, lat)).r) + color * 0.5f;
 
-  imageStore(image, texelCoord, col);
+  imageStore(image, txCoord, vec4(col, 1.f));
 }

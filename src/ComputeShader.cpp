@@ -87,12 +87,14 @@ Shader::Shader(const fspath& path) {
   glDeleteShader(shader);
 }
 
-void Shader::use() const {
-  glUseProgram(program);
-}
+void Shader::use() const { glUseProgram(program); }
 
 void Shader::setUniform3f(const std::string& name, const vec3& v) const {
   use();
   glUniform3f(glGetUniformLocation(program, name.c_str()), v.x, v.y, v.z);
 }
 
+void Shader::setUniformTexture(const std::string& name, const GLuint& unit) const {
+  use();
+  glUniform1i(glGetUniformLocation(program, name.c_str()), unit);
+}

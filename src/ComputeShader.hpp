@@ -8,6 +8,7 @@ public:
   void use() const;
 
   void setUniform3f(const std::string& name, const vec3& v) const;
+  void setUniformTexture(const std::string& name, const GLuint& unit) const;
 
 private:
   GLuint program;
