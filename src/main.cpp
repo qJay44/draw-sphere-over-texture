@@ -55,6 +55,7 @@ int main() {
   glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &lgCountZ);
   printf("Work group local count: [x: %d, y: %d, z: %d]\n", lgCountX, lgCountY, lgCountZ);
 
+  const char* dirNames[6]{"up", "down", "left", "right", "front", "rear"};
   const vec3 directions[6]{
     {0.f,  1.f,  0.f }, // Up
     {0.f,  -1.f, 0.f }, // Down
@@ -73,10 +74,15 @@ int main() {
   };
 
   Shader mainShader("main.comp");
-  Shader clearShader("clear.comp");
+  Shader hcubemapShader("hcubemap.comp");
+  Shader vcubemapShader("vcubemap.comp");
+
+  stbi_set_flip_vertically_on_load(true);
+  stbi_flip_vertically_on_write(true);
+
+  bool computeCubemap = true;
 
   int texWidth, texHeight, channels;
-  stbi_set_flip_vertically_on_load(true);
   byte* pixelsInput = stbi_load("wem2560.png", &texWidth, &texHeight, &channels, 0);
   u32 textureInput;
   glGenTextures(1, &textureInput);
@@ -86,8 +92,10 @@ int main() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, texWidth, texHeight, 0, GL_RED, GL_UNSIGNED_BYTE, pixelsInput);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RED, GL_UNSIGNED_BYTE, pixelsInput);
   mainShader.setUniformTexture("diffuse0", 1);
+  hcubemapShader.setUniformTexture("diffuse0", 1);
+  vcubemapShader.setUniformTexture("diffuse0", 1);
 
   u32 textureOutput;
   glGenTextures(1, &textureOutput);
@@ -108,8 +116,34 @@ int main() {
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelsOutput);
   }
-  stbi_flip_vertically_on_write(true);
   stbi_write_png("result.png", texWidth, texHeight, 4, pixelsOutput, texWidth * 4);
+
+  if (computeCubemap) {
+    ivec2 cubemapSize{texWidth, texWidth * 0.75f};
+    byte* pixels = new byte[cubemapSize.x * cubemapSize.y * 4];
+    u32 cubemap;
+    glGenTextures(1, &cubemap);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, cubemap);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, cubemapSize.x, cubemapSize.y, 0, GL_RGBA, GL_FLOAT, NULL);
+    glBindImageTexture(0, cubemap, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+    hcubemapShader.use();
+    glDispatchCompute(cubemapSize.x, cubemapSize.x / 4, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+    vcubemapShader.use();
+    glDispatchCompute(cubemapSize.x / 4, cubemapSize.y, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+    stbi_write_png("cubemap.png", cubemapSize.x, cubemapSize.y, 4, pixels, cubemapSize.x * 4);
+  }
 
   stbi_image_free(pixelsInput);
   glfwTerminate();
