@@ -37,7 +37,9 @@ static GLuint compile(const fspath& filename, int type) {
     std::string head = std::format("\n===== Shader compilation error ({}) =====\n\n", filename.string().c_str());
     printf(fmt.c_str(), head.c_str());
     puts(infoLog);
-    printf(fmt.c_str(), "====================================\n");
+    for (int i = 0; i < head.length(); i++)
+      printf(fmt.c_str(), "=");
+    puts("");
   }
 
   return shaderId;
@@ -89,12 +91,19 @@ Shader::Shader(const fspath& path) {
 
 void Shader::use() const { glUseProgram(program); }
 
+void Shader::setUniform1ui(const std::string& name, const GLuint& val) const {
+  use();
+  glUniform1ui(glGetUniformLocation(program, name.c_str()), val);
+}
+
+void Shader::setUniform2ui(const std::string& name, const uvec2& v) const {
+  use();
+  glUniform2ui(glGetUniformLocation(program, name.c_str()), v.x, v.y);
+}
+
 void Shader::setUniform3f(const std::string& name, const vec3& v) const {
   use();
   glUniform3f(glGetUniformLocation(program, name.c_str()), v.x, v.y, v.z);
 }
 
-void Shader::setUniformTexture(const std::string& name, const GLuint& unit) const {
-  use();
-  glUniform1i(glGetUniformLocation(program, name.c_str()), unit);
-}
+void Shader::setUniformTexture(const std::string& name, const GLuint& unit) const { setUniform1ui(name, unit); }

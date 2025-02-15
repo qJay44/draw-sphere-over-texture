@@ -7,6 +7,8 @@ public:
 
   void use() const;
 
+  void setUniform1ui(const std::string& name, const GLuint& val) const;
+  void setUniform2ui(const std::string& name, const uvec2& v) const;
   void setUniform3f(const std::string& name, const vec3& v) const;
   void setUniformTexture(const std::string& name, const GLuint& unit) const;
 

@@ -1,6 +1,3 @@
 Build/
 .cache/
-wem2560.png
-wem21600.png
-cubemap.png
-result.png
+*.png
