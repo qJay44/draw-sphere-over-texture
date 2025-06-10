@@ -1,15 +1,23 @@
 #version 460 core
 
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
-layout(r32f, binding = 0) writeonly uniform image2D image;
+#define PI 3.141592265359f
 
-layout(binding = 1) uniform sampler2D diffuse0;
-layout(binding = 2) uniform sampler2D diffuse1;
+#define INT16_MIN -32768
+#define INT16_MAX  32767
+#define INT16_SUM (-INT16_MIN + INT16_MAX)
+
+#define NORMALIZE_INT16(a) ((float(a) + -INT16_MIN) / INT16_SUM) // [INT16_MIN, INT16_MAX] to [0, 1]
+#define NORM_TO_INT16(a) (a * INT16_SUM - -INT16_MIN) // [INT16_MIN, INT16_MAX] to [0, 1]
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(r16i, binding = 0) writeonly uniform iimage2D image;
+
+// NOTE: Using isampler2D for int values
+layout(binding = 1) uniform isampler2D diffuse0;
+layout(binding = 2) uniform isampler2D diffuse1;
 
 layout(location = 0) uniform uvec2 offset;
 layout(location = 1) uniform uint face;
-
-#define PI 3.141592265359f
 
 // NOTE: Assuming diffuse0 and diffuse1 are the halfes of a single image
 uint width = textureSize(diffuse0, 0).x * 2;
@@ -48,10 +56,17 @@ void main() {
   float B = _B.x > 0.5f ? texture(diffuse1, vec2((_B.x - 0.5f) * 2.f, _B.y)).r : texture(diffuse0, vec2(_B.x * 2.f, _B.y)).r;
   float C = _C.x > 0.5f ? texture(diffuse1, vec2((_C.x - 0.5f) * 2.f, _C.y)).r : texture(diffuse0, vec2(_C.x * 2.f, _C.y)).r;
   float D = _D.x > 0.5f ? texture(diffuse1, vec2((_D.x - 0.5f) * 2.f, _D.y)).r : texture(diffuse0, vec2(_D.x * 2.f, _D.y)).r;
-  vec3 color = vec3(A * (1.f - mu) * (1.f - nu) + B * mu * (1.f - nu) + C * (1.f - mu) * nu + D * mu * nu);
+
+  A = NORMALIZE_INT16(A);
+  B = NORMALIZE_INT16(B);
+  C = NORMALIZE_INT16(C);
+  D = NORMALIZE_INT16(D);
+
+  float col = A * (1.f - mu) * (1.f - nu) + B * mu * (1.f - nu) + C * (1.f - mu) * nu + D * mu * nu;
+  ivec3 color = ivec3(NORM_TO_INT16(col));
 
   ivec2 loc = ivec2(gl_GlobalInvocationID.xy);
   loc.x = abs(loc.x - int(gl_NumWorkGroups.x));
 
-  imageStore(image, loc, vec4(color, 1.f));
+  imageStore(image, loc, ivec4(color, INT16_MAX));
 }

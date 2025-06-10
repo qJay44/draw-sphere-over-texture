@@ -9,10 +9,35 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Run)
 
 project(MyProject VERSION 1.0)
 
-file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp ${GLAD_PATH}/src/glad.c)
-set_source_files_properties(${GLAD_PATH}/src/glad.c PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+# Using mannually built libtiff (copying dll)
+set(LIBTIFF_LIB_FILE libtiff.dll)
+add_custom_command(
+  OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${LIBTIFF_LIB_FILE}
+  COMMAND ${CMAKE_COMMAND} -E copy
+    ${LIBTIFF_PATH}/bin/${LIBTIFF_LIB_FILE}
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${LIBTIFF_LIB_FILE}
+  DEPENDS ${LIBTIFF_PATH}/bin/${LIBTIFF_LIB_FILE}
+)
+
+# Using mannually built glad (copying dll)
+set(GLAD_LIB_FILE libGLAD.dll)
+add_custom_command(
+  OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GLAD_LIB_FILE}
+  COMMAND ${CMAKE_COMMAND} -E copy
+    ${GLAD_PATH}/Build/Release/${GLAD_LIB_FILE}
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GLAD_LIB_FILE}
+  DEPENDS ${GLAD_PATH}/Build/Release/${GLAD_LIB_FILE}
+)
+
+add_executable(${PROJECT_NAME}
+  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${LIBTIFF_LIB_FILE}
+  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GLAD_LIB_FILE}
+  ${SOURCES})
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror)
+target_compile_options(${PROJECT_NAME} PRIVATE -isystem ${GENERAL_INCLUDES}/stb)
 
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.hpp)
 
@@ -21,12 +46,16 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   ${GLFW_PATH}/include
   ${GLM_PATH}/include
   ${GENERAL_INCLUDES}/stb
+  ${LIBTIFF_PATH}/include
 )
 
 target_link_directories(${PROJECT_NAME} PUBLIC
   ${GLM_PATH}/bin
   ${GLM_PATH}/lib
   ${GLFW_PATH}/lib-mingw-w64
+  ${LIBTIFF_PATH}/lib
+  ${GLAD_PATH}/Build/Release
 )
 
-target_link_libraries(${PROJECT_NAME} glfw3 glm)
+target_link_libraries(${PROJECT_NAME} glfw3 glm libtiff libGLAD)
+

@@ -10,5 +10,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/glm.hpp"
 
-using namespace glm;
+using glm::vec3;
+using glm::uvec2;
 

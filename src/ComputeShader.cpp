@@ -37,7 +37,7 @@ static GLuint compile(const fspath& filename, int type) {
     std::string head = std::format("\n===== Shader compilation error ({}) =====\n\n", filename.string().c_str());
     printf(fmt.c_str(), head.c_str());
     puts(infoLog);
-    for (int i = 0; i < head.length(); i++)
+    for (size_t i = 0; i < head.length(); i++)
       printf(fmt.c_str(), "=");
     puts("");
   }
