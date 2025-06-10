@@ -98,8 +98,8 @@ int main() {
   };
 
   Shader mainShader("main.comp");
-  Shader hcubemapShader("hcubemap_w2.comp");
-  Shader vcubemapShader("vcubemap_w2.comp");
+  Shader hcubemapShader("hcubemap_w2_r32f.comp");
+  Shader vcubemapShader("vcubemap_w2_r32f.comp");
 
   stbi_set_flip_vertically_on_load(true);
   stbi_flip_vertically_on_write(true);
@@ -152,12 +152,13 @@ int main() {
   }
 
   if (computeCubemap) {
-    #define DO_TIF
+    // #define DO_TIF
+    // #define DO_COLORED
 
     #ifdef DO_TIF
       const char* westFile = "bathymetry0.tif";
       const char* eastFile = "bathymetry1.tif";
-      const char* folderName = "water";
+      const fspath folderName = R"(faces\water)";
       const bool isTif = true;
       const GLenum pixelsDataType = GL_SHORT;
       const GLenum readFormat = GL_RED_INTEGER;
@@ -166,14 +167,26 @@ int main() {
       hcubemapShader = Shader("hcubemap_w2_16i.comp");
       vcubemapShader = Shader("vcubemap_w2_16i.comp");
     #else
-      const char* westFile = "heightmapLand21600_0.png";
-      const char* eastFile = "heightmapLand21600_1.png";
-      const char* folderName = "land";
       const bool isTif = false;
-      const GLenum pixelsType = GL_UNSIGNED_BYTE;
-      const GLenum getFormat = GL_RED;
-      const GLenum internalFormat = GL_RED;
-      const GLint imageFormat = GL_R32F;
+      const GLenum pixelsDataType = GL_UNSIGNED_BYTE;
+
+      #ifdef DO_COLORED
+        const char* westFile = "worldColors21600_0.png";
+        const char* eastFile = "worldColors21600_1.png";
+        const fspath folderName = R"(faces\worldColors21600)";
+        const GLenum readFormat = GL_RGB;
+        const GLenum internalFormat = GL_RGB;
+        const GLint imageFormat = GL_RGBA32F;
+        hcubemapShader = Shader("hcubemap_w2_rgba32f.comp");
+        vcubemapShader = Shader("vcubemap_w2_rgba32f.comp");
+      #else
+        const char* westFile = "borders21600_0.png";
+        const char* eastFile = "borders21600_1.png";
+        const fspath folderName = R"(faces\borders21600)";
+        const GLenum readFormat = GL_RED;
+        const GLenum internalFormat = GL_RED;
+        const GLint imageFormat = GL_R32F;
+      #endif
     #endif
 
     void* pixelsDiffuse0 = nullptr;
@@ -224,7 +237,7 @@ int main() {
     glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, texWidth, texHeight, 0, readFormat, pixelsDataType, pixelsDiffuse1);
 
     uvec2 faceSize(texWidth / 2);
-    void* pixels = isTif ? (void*)(new s16[faceSize.x * faceSize.y]) : (void*)(new byte[faceSize.x * faceSize.y]);
+    void* pixels = isTif ? (void*)(new s16[faceSize.x * faceSize.y * channels]) : (void*)(new byte[faceSize.x * faceSize.y * channels]);
     u32 face;
     glGenTextures(1, &face);
     glActiveTexture(GL_TEXTURE0);
@@ -235,6 +248,8 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, imageFormat, faceSize.x, faceSize.y, 0, readFormat, pixelsDataType, NULL);
     glBindImageTexture(0, face, 0, GL_FALSE, 0, GL_WRITE_ONLY, imageFormat);
+
+    system(std::format("mkdir {}", folderName.string()).c_str());
 
     hcubemapShader.setUniformTexture("diffuse0", 1);
     hcubemapShader.setUniformTexture("diffuse1", 2);
@@ -260,12 +275,15 @@ int main() {
       glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
       glDispatchCompute(faceSize.x, faceSize.y, 1);
       glGetTexImage(GL_TEXTURE_2D, 0, readFormat, pixelsDataType, pixels);
-      std::string path = std::format("faces/{}/{}.png",folderName, orderv[i]);
+      std::string filePathNoExt = (folderName / orderv[i]).string();
 
-      if (isTif)
-        saveTif(path.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, (s16*)pixels);
-      else
-        stbi_write_png(path.c_str(), faceSize.x, faceSize.y, 1, pixels, faceSize.x);
+      if (isTif) {
+        filePathNoExt += ".tif";
+        saveTif(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, (s16*)pixels);
+      } else {
+        filePathNoExt += ".png";
+        stbi_write_png(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, pixels, channels * faceSize.x);
+      }
     }
     clearLine();
     clrp.fg = clrp::FG::LIGHT_GREEN;
@@ -285,12 +303,15 @@ int main() {
       glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
       glDispatchCompute(faceSize.x, faceSize.y, 1);
       glGetTexImage(GL_TEXTURE_2D, 0, readFormat, pixelsDataType, pixels);
-      std::string path = std::format("faces/{}/{}.png", folderName, orderh[i]);
+      std::string filePathNoExt = (folderName / orderh[i]).string();
 
-      if (isTif)
-        saveTif(path.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, (s16*)pixels);
-      else
-        stbi_write_png(path.c_str(), faceSize.x, faceSize.y, 1, pixels, faceSize.x);
+      if (isTif) {
+        filePathNoExt += ".tif";
+        saveTif(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, (s16*)pixels);
+      } else {
+        filePathNoExt += ".png";
+        stbi_write_png(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, pixels, channels * faceSize.x);
+      }
     }
     clearLine();
     clrp.fg = clrp::FG::LIGHT_GREEN;
@@ -334,7 +355,6 @@ s16* loadTif(
   TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &channels);
   TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &depth);
   TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
-  TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
   s16* buf = new s16[width * height];
 
   for (u32 row = 0; row < height; row++) {
@@ -371,8 +391,6 @@ void saveTif(
   TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, channels);
   TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, depth);
   TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, sampleFormat);
-  TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
 
   for (u32 row = 0; row < height; row++) {
     const s16* rowPtr = pixels + row * width;

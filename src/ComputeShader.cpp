@@ -40,6 +40,7 @@ static GLuint compile(const fspath& filename, int type) {
     for (size_t i = 0; i < head.length(); i++)
       printf(fmt.c_str(), "=");
     puts("");
+    exit(1);
   }
 
   return shaderId;
@@ -59,6 +60,7 @@ static void link(GLuint program) {
     printf(fmt.c_str(), "\n===== Shader link error =====\n\n");
     puts(infoLog);
     printf(fmt.c_str(), "=============================\n\n");
+    exit(1);
   }
 }
 

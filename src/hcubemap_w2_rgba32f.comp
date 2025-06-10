@@ -1,0 +1,57 @@
+#version 460 core
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(rgba32f, binding = 0) writeonly uniform image2D image;
+
+layout(binding = 1) uniform sampler2D diffuse0;
+layout(binding = 2) uniform sampler2D diffuse1;
+
+layout(location = 0) uniform uvec2 offset;
+layout(location = 1) uniform uint face;
+
+#define PI 3.141592265359f
+
+// NOTE: Assuming diffuse0 and diffuse1 are the halfes of a single image
+uint width = textureSize(diffuse0, 0).x * 2;
+uint height = textureSize(diffuse0, 0).y;
+uint edge = width / 4;
+
+void main() {
+  vec2 actualCoord = gl_GlobalInvocationID.xy + offset;
+  float a = 2.f * actualCoord.x / edge;
+  float b = 2.f * (actualCoord.y + edge) / edge;
+  vec3 points[4] = vec3[4](
+    vec3(-1.f, 1.f - a, 3.f - b), // back
+    vec3(a - 3.f, -1.f, 3.f - b), // left
+    vec3(1.f, a - 5.f, 3.f - b),  // front
+    vec3(7.f - a, 1.f, 3.f - b)   // right
+  );
+  vec3 p = points[face];
+  float theta = atan(p.y, p.x);
+  float r = length(p.xy);
+  float phi = atan(p.z, r);
+
+  float uf = 2.f * edge * (theta + PI) / PI;
+  float vf = 2.f * edge * (PI * 0.5f - phi) / PI;
+  float ui = floor(uf);
+  float vi = floor(vf);
+  float u2 = ui + 1.f;
+  float v2 = vi + 1.f;
+  float mu = uf - ui;
+  float nu = vf - vi;
+
+  vec2 _A = vec2(ui / width, vi / height);
+  vec2 _B = vec2(u2 / width, vi / height);
+  vec2 _C = vec2(ui / width, v2 / height);
+  vec2 _D = vec2(u2 / width, v2 / height);
+
+  vec4 A = _A.x > 0.5f ? texture(diffuse1, vec2((_A.x - 0.5f) * 2.f, _A.y)).rgba : texture(diffuse0, vec2(_A.x * 2.f, _A.y)).rgba;
+  vec4 B = _B.x > 0.5f ? texture(diffuse1, vec2((_B.x - 0.5f) * 2.f, _B.y)).rgba : texture(diffuse0, vec2(_B.x * 2.f, _B.y)).rgba;
+  vec4 C = _C.x > 0.5f ? texture(diffuse1, vec2((_C.x - 0.5f) * 2.f, _C.y)).rgba : texture(diffuse0, vec2(_C.x * 2.f, _C.y)).rgba;
+  vec4 D = _D.x > 0.5f ? texture(diffuse1, vec2((_D.x - 0.5f) * 2.f, _D.y)).rgba : texture(diffuse0, vec2(_D.x * 2.f, _D.y)).rgba;
+
+  vec4 color = A * (1.f - mu) * (1.f - nu) + B * mu * (1.f - nu) + C * (1.f - mu) * nu + D * mu * nu;
+
+  imageStore(image, ivec2(gl_GlobalInvocationID.xy), color);
+}
+
