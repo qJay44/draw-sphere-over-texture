@@ -18,7 +18,7 @@
 #define WIDTH 10u
 #define HEIGHT 10u
 
-s16* loadTif(
+s16* loadTif_R16I(
   const char* path,
   u32& width,
   u32& height,
@@ -27,7 +27,16 @@ s16* loadTif(
   u16& sampleFormat
 );
 
-void saveTif(
+u16* loadTif_R16UI(
+  const char* path,
+  u32& width,
+  u32& height,
+  u16& channels,
+  u16& depth,
+  u16& sampleFormat
+);
+
+void saveTif_R16I(
   const char* path,
   const u32& width,
   const u32& height,
@@ -36,6 +45,17 @@ void saveTif(
   const u16& sampleFormat,
   const s16* pixels
 );
+
+void saveTif_R16UI(
+  const char* path,
+  const u32& width,
+  const u32& height,
+  const u16& channels,
+  const u16& depth,
+  const u16& sampleFormat,
+  const u16* pixels
+);
+
 
 int main() {
   // Assuming the executable is launching from its own directory
@@ -152,20 +172,20 @@ int main() {
   }
 
   if (computeCubemap) {
-    // #define DO_TIF
+    #define DO_TIF
     // #define DO_COLORED
 
     #ifdef DO_TIF
-      const char* westFile = "bathymetry0.tif";
-      const char* eastFile = "bathymetry1.tif";
-      const fspath folderName = R"(faces\water)";
+      const char* westFile = "distanceFieldWater21600_0_50.tif";
+      const char* eastFile = "distanceFieldWater21600_1_50.tif";
+      const fspath folderName = R"(faces\distanceFieldWater21600_50)";
       const bool isTif = true;
-      const GLenum pixelsDataType = GL_SHORT;
+      const GLenum pixelsDataType = GL_UNSIGNED_SHORT;
       const GLenum readFormat = GL_RED_INTEGER;
-      const GLint internalFormat = GL_R16I;
-      const GLint imageFormat = GL_R16I;
-      hcubemapShader = Shader("hcubemap_w2_16i.comp");
-      vcubemapShader = Shader("vcubemap_w2_16i.comp");
+      const GLint internalFormat = GL_R16UI;
+      const GLint imageFormat = GL_R16UI;
+      hcubemapShader = Shader("hcubemap_w2_r16ui.comp");
+      vcubemapShader = Shader("vcubemap_w2_r16ui.comp");
     #else
       const bool isTif = false;
       const GLenum pixelsDataType = GL_UNSIGNED_BYTE;
@@ -180,11 +200,11 @@ int main() {
         hcubemapShader = Shader("hcubemap_w2_rgba32f.comp");
         vcubemapShader = Shader("vcubemap_w2_rgba32f.comp");
       #else
-        const char* westFile = "borders21600_0.png";
-        const char* eastFile = "borders21600_1.png";
-        const fspath folderName = R"(faces\borders21600)";
+        const char* westFile = "distanceFieldWater21600_0.png";
+        const char* eastFile = "distanceFieldWater21600_1.png";
+        const fspath folderName = R"(faces\distanceFieldWater21600)";
         const GLenum readFormat = GL_RED;
-        const GLenum internalFormat = GL_RED;
+        const GLenum internalFormat = GL_R32F;
         const GLint imageFormat = GL_R32F;
       #endif
     #endif
@@ -193,8 +213,19 @@ int main() {
     void* pixelsDiffuse1 = nullptr;
 
     if (isTif) {
-      pixelsDiffuse0 = (void*)loadTif(westFile, texWidth, texHeight, channels, tifDepth, tifFormat);
-      pixelsDiffuse1 = (void*)loadTif(eastFile, texWidth, texHeight, channels, tifDepth, tifFormat);
+      switch (internalFormat) {
+        case GL_R16I:
+          pixelsDiffuse0 = (void*)loadTif_R16I(westFile, texWidth, texHeight, channels, tifDepth, tifFormat);
+          pixelsDiffuse1 = (void*)loadTif_R16I(eastFile, texWidth, texHeight, channels, tifDepth, tifFormat);
+          break;
+        case GL_R16UI:
+          pixelsDiffuse0 = (void*)loadTif_R16UI(westFile, texWidth, texHeight, channels, tifDepth, tifFormat);
+          pixelsDiffuse1 = (void*)loadTif_R16UI(eastFile, texWidth, texHeight, channels, tifDepth, tifFormat);
+          break;
+        default:
+          puts("Unhandled internalFormat");
+          exit(1);
+      }
     } else {
       int w, h, c;
 
@@ -279,7 +310,7 @@ int main() {
 
       if (isTif) {
         filePathNoExt += ".tif";
-        saveTif(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, (s16*)pixels);
+        saveTif_R16I(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, (s16*)pixels);
       } else {
         filePathNoExt += ".png";
         stbi_write_png(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, pixels, channels * faceSize.x);
@@ -307,7 +338,7 @@ int main() {
 
       if (isTif) {
         filePathNoExt += ".tif";
-        saveTif(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, (s16*)pixels);
+        saveTif_R16I(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, (s16*)pixels);
       } else {
         filePathNoExt += ".png";
         stbi_write_png(filePathNoExt.c_str(), faceSize.x, faceSize.y, channels, pixels, channels * faceSize.x);
@@ -320,9 +351,21 @@ int main() {
     puts("");
 
     if (isTif) {
-      delete[] (s16*)pixelsDiffuse0;
-      delete[] (s16*)pixelsDiffuse1;
-      delete[] (s16*)pixels;
+      switch (internalFormat) {
+        case GL_R16I:
+          delete[] (s16*)pixelsDiffuse0;
+          delete[] (s16*)pixelsDiffuse1;
+          delete[] (s16*)pixels;
+          break;
+        case GL_R16UI:
+          delete[] (u16*)pixelsDiffuse0;
+          delete[] (u16*)pixelsDiffuse1;
+          delete[] (u16*)pixels;
+          break;
+        default:
+          puts("Unhandled internalFormat");
+          exit(1);
+      }
     } else {
       stbi_image_free(pixelsDiffuse0);
       stbi_image_free(pixelsDiffuse1);
@@ -336,7 +379,7 @@ int main() {
   return 0;
 }
 
-s16* loadTif(
+s16* loadTif_R16I(
   const char* path,
   u32& width,
   u32& height,
@@ -355,6 +398,7 @@ s16* loadTif(
   TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &channels);
   TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &depth);
   TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
+
   s16* buf = new s16[width * height];
 
   for (u32 row = 0; row < height; row++) {
@@ -366,12 +410,60 @@ s16* loadTif(
     }
   }
 
+  // for (u32 y = 0; y < height / 2; ++y) {
+  //   short* rowTop = buf + y * width;
+  //   short* rowBottom = buf + (height - y - 1) * width;
+  //   std::swap_ranges(rowTop, rowTop + width, rowBottom);
+  // }
+
   return buf;
 
   TIFFClose(tif);
 }
 
-void saveTif(
+u16* loadTif_R16UI(
+  const char* path,
+  u32& width,
+  u32& height,
+  u16& channels,
+  u16& depth,
+  u16& sampleFormat
+) {
+  TIFF* tif = TIFFOpen(path, "r");
+  if (!tif) {
+    printf("tif can't open file [%s]\n", path);
+    exit(1);
+  }
+
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
+  TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &channels);
+  TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &depth);
+  TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
+
+  u16* buf = new u16[width * height];
+
+  for (u32 row = 0; row < height; row++) {
+    u16* bufRow = buf + row * width;
+
+    if (TIFFReadScanline(tif, bufRow, row) < 0) {
+      puts("tif scanline read error");
+      exit(1);
+    }
+  }
+
+  // for (u32 y = 0; y < height / 2; ++y) {
+  //   short* rowTop = buf + y * width;
+  //   short* rowBottom = buf + (height - y - 1) * width;
+  //   std::swap_ranges(rowTop, rowTop + width, rowBottom);
+  // }
+
+  return buf;
+
+  TIFFClose(tif);
+}
+
+void saveTif_R16I(
   const char* path,
   const u32& width,
   const u32& height,
@@ -391,6 +483,7 @@ void saveTif(
   TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, channels);
   TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, depth);
   TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, sampleFormat);
+  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
 
   for (u32 row = 0; row < height; row++) {
     const s16* rowPtr = pixels + row * width;
@@ -404,4 +497,40 @@ void saveTif(
 
   TIFFClose(tif);
 }
+
+void saveTif_R16UI(
+  const char* path,
+  const u32& width,
+  const u32& height,
+  const u16& channels,
+  const u16& depth,
+  const u16& sampleFormat,
+  const u16* pixels
+) {
+  TIFF* tif = TIFFOpen(path, "w");
+  if (!tif) {
+    printf("tif can't open file [%s]\n", path);
+    exit(1);
+  }
+
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
+  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, channels);
+  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, depth);
+  TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, sampleFormat);
+  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+
+  for (u32 row = 0; row < height; row++) {
+    const u16* rowPtr = pixels + row * width;
+
+    if (TIFFWriteScanline(tif, (void*)rowPtr, row) < 0) {
+      printf("Failed to write scanline, row: [%i]\n", row);
+      TIFFClose(tif);
+      exit(1);
+    }
+  }
+
+  TIFFClose(tif);
+}
+
 
