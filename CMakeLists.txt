@@ -9,7 +9,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Run)
 
 project(MyProject VERSION 1.0)
 
-file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE SOURCES
+  ${PROJECT_SOURCE_DIR}/src/*.cpp
+  ${UTILS_PATH}/src/*.cpp
+)
 
 # Using mannually built libtiff (copying dll)
 set(LIBTIFF_LIB_FILE libtiff.dll)
@@ -46,6 +49,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   ${GLFW_PATH}/include
   ${GLM_PATH}/include
   ${GENERAL_INCLUDES}/stb
+  ${UTILS_PATH}/include
   ${LIBTIFF_PATH}/include
 )
 
