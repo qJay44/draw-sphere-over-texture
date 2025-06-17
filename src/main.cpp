@@ -78,6 +78,7 @@ int main() {
 
   // generator::genCubemapOnPlane("wem2560.png")
   generator::genCubemap("distanceFieldWater21600_0.tif", "distanceFieldWater21600_1.tif", GL_R16UI, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
+  // generator::genCubemap("bathymetry21600_0.tif", "bathymetry21600_1.tif", GL_R16I, GL_RED_INTEGER, GL_SHORT);
 
   glfwTerminate();
   puts("Done");

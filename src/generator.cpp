@@ -89,15 +89,15 @@ void genCubemap(
   if (isTif) {
     switch (internalFormat) {
       case GL_R16I:
-        pixelsDiffuse0 = loadTif_R16I(path0Cstr, &texSize.x, &texSize.y);
-        pixelsDiffuse1 = loadTif_R16I(path1Cstr, &texSize.x, &texSize.y);
+        pixelsDiffuse0 = loadTif_R16I(path0Cstr, &texSize.x, &texSize.y, true);
+        pixelsDiffuse1 = loadTif_R16I(path1Cstr, &texSize.x, &texSize.y, true);
         channels = 1;
         tifDepth = 16;
         tifFormat = SAMPLEFORMAT_INT;
         break;
       case GL_R16UI:
-        pixelsDiffuse0 = loadTif_R16UI(path0Cstr, &texSize.x, &texSize.y);
-        pixelsDiffuse1 = loadTif_R16UI(path1Cstr, &texSize.x, &texSize.y);
+        pixelsDiffuse0 = loadTif_R16UI(path0Cstr, &texSize.x, &texSize.y, true);
+        pixelsDiffuse1 = loadTif_R16UI(path1Cstr, &texSize.x, &texSize.y, true);
         channels = 1;
         tifDepth = 16;
         tifFormat = SAMPLEFORMAT_UINT;
@@ -188,14 +188,9 @@ void genCubemap(
     glGetTexImage(GL_TEXTURE_2D, 0, readFormat, readDataType, outputPixels);
 
     if (isTif) {
-      std::string name = orderv[i];
-      if (name == "bottom")
-        name = "top";
-      else if (orderv[i] == "top")
-        name = "bottom";
-
-      std::string filePath = ((folderName / name).string() + path0.extension().string());
-      saveTif(filePath.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, outputPixels);
+      bool flipVertically = orderv[i] == "bottom" || orderv[i] == "top";
+      std::string filePath = ((folderName / orderv[i]).string() + path0.extension().string());
+      saveTif(filePath.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, outputPixels, flipVertically);
     } else {
       std::string filePath = ((folderName / orderv[i]).string() + path0.extension().string());
       if (!stbi_write_png(filePath.c_str(), faceSize.x, faceSize.y, channels, outputPixels, channels * faceSize.x))
