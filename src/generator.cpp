@@ -82,7 +82,9 @@ void genCubemap(
   void* pixelsDiffuse1 = nullptr;
 
   uvec2 texSize;
-  u16 channels, tifDepth, tifFormat;
+  u16 channels = 0;
+  u16 tifDepth = 0;
+  u16 tifFormat = 0;
 
   if (isTif) {
     switch (internalFormat) {
@@ -103,9 +105,6 @@ void genCubemap(
       default:
         error("[genCubemap] Unexpected internalFormat");
     }
-
-    pixelsDiffuse0 = loadTif(path0Cstr, &texSize.x, &texSize.y, &channels, &tifDepth, &tifFormat);
-    pixelsDiffuse1 = loadTif(path1Cstr, &texSize.x, &texSize.y, &channels, &tifDepth, &tifFormat);
   } else {
     int w, h, c;
 
@@ -170,8 +169,8 @@ void genCubemap(
   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, faceSize.x, faceSize.y, 0, readFormat, readDataType, NULL);
   glBindImageTexture(0, face, 0, GL_FALSE, 0, GL_WRITE_ONLY, internalFormat);
 
-  const char* orderv[3] = {"bottom", "front", "top"};
-  const char* orderh[4] = {"front", "right", "back", "left"};
+  static constexpr std::string orderv[3] = {"bottom", "front", "top"};
+  static constexpr std::string orderh[4] = {"front", "right", "back", "left"};
 
   std::string fileName = path0.stem().string();
   fileName.erase(fileName.length() - 2); // Remove split number
@@ -179,19 +178,26 @@ void genCubemap(
   system(std::format("mkdir {}", folderName.string()).c_str());
 
   // vertical
-  status::start("Converting to vertical face:", orderv[0]);
-  for (u8 i = 0; i < 3; i++) {
+  status::start("Converting to vertical face:  ", orderv[0]);
+  for (GLuint i = 0; i < 3; i++) {
     status::update(orderv[i]);
     vcubemapShader.setUniform2ui("offset", {0u, faceSize.x * i});
     vcubemapShader.setUniform1ui("face", i);
     glDispatchCompute(faceSize.x, faceSize.y, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glGetTexImage(GL_TEXTURE_2D, 0, readFormat, readDataType, outputPixels);
-    std::string filePath = ((folderName / orderv[i]).string() + path0.extension().string());
 
     if (isTif) {
+      std::string name = orderv[i];
+      if (name == "bottom")
+        name = "top";
+      else if (orderv[i] == "top")
+        name = "bottom";
+
+      std::string filePath = ((folderName / name).string() + path0.extension().string());
       saveTif(filePath.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, outputPixels);
     } else {
+      std::string filePath = ((folderName / orderv[i]).string() + path0.extension().string());
       if (!stbi_write_png(filePath.c_str(), faceSize.x, faceSize.y, channels, outputPixels, channels * faceSize.x))
         error("[genCubemap] stbi write returned 0 [{}]", filePath.c_str());
     }
@@ -200,7 +206,7 @@ void genCubemap(
 
   // horizontal
   status::start("Converting to horizontal face:", orderh[0]);
-  for (u8 i = 0; i < 4; i++) {
+  for (GLuint i = 0; i < 4; i++) {
     status::update(orderh[i]);
     hcubemapShader.setUniform2ui("offset", {faceSize.x * i, 0u});
     hcubemapShader.setUniform1ui("face", i);

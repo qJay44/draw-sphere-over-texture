@@ -15,8 +15,8 @@ layout(r16i, binding = 0) writeonly uniform iimage2D image;
 layout(binding = 1) uniform isampler2D diffuse0;
 layout(binding = 2) uniform isampler2D diffuse1;
 
-layout(location = 0) uniform uvec2 offset;
-layout(location = 1) uniform uint face;
+uniform uvec2 offset;
+uniform uint face;
 
 // NOTE: Assuming diffuse0 and diffuse1 are the halfes of a single image
 uint width = textureSize(diffuse0, 0).x * 2;

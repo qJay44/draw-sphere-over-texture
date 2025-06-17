@@ -11,8 +11,7 @@ project(MyProject VERSION 1.0)
 
 file(GLOB_RECURSE SOURCES
   ${PROJECT_SOURCE_DIR}/src/*.cpp
-  ${UTILS_PATH}/src/*.cpp
-)
+  ${UTILS_PATH}/src/*.cpp)
 
 # Using mannually built libtiff (copying dll)
 set(LIBTIFF_LIB_FILE libtiff.dll)

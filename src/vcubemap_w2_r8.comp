@@ -6,8 +6,8 @@ layout(r8, binding = 0) writeonly uniform image2D image;
 layout(binding = 1) uniform sampler2D diffuse0;
 layout(binding = 2) uniform sampler2D diffuse1;
 
-layout(location = 0) uniform uvec2 offset;
-layout(location = 1) uniform uint face;
+uniform uvec2 offset;
+uniform uint face;
 
 #define PI 3.141592265359f
 

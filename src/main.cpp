@@ -5,9 +5,30 @@
 #include <windows.h>
 
 #include "generator.hpp"
+#include "utils/clrp.hpp"
 
 #define WIDTH 10u
 #define HEIGHT 10u
+
+void GLAPIENTRY MessageCallback(
+  GLenum source,
+  GLenum type,
+  GLuint id,
+  GLenum severity,
+  GLsizei length,
+  const GLchar* message,
+  const void* userParam
+) {
+  clrp::clrp_t clrpError;
+  clrpError.attr = clrp::ATTRIBUTE::BOLD;
+  clrpError.fg = clrp::FG::RED;
+  fprintf(
+    stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+    (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type, severity, clrp::format(message, clrpError).c_str()
+  );
+  exit(1);
+}
+
 
 int main() {
   // Assuming the executable is launching from its own directory
@@ -18,6 +39,7 @@ int main() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, TRUE);
 
   // Window init
   GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "", NULL, NULL);
@@ -35,6 +57,8 @@ int main() {
   }
 
   glViewport(0, 0, WIDTH, HEIGHT);
+  glEnable(GL_DEBUG_OUTPUT);
+  glDebugMessageCallback(MessageCallback, 0);
 
   GLint wgCountX;
   GLint wgCountY;
@@ -53,7 +77,7 @@ int main() {
   printf("Work group local count: [x: %d, y: %d, z: %d]\n", lgCountX, lgCountY, lgCountZ);
 
   // generator::genCubemapOnPlane("wem2560.png")
-  generator::genCubemap("distanceFieldWater21600_0.png", "distanceFieldWater21600_1.png", GL_R8, GL_RED, GL_UNSIGNED_BYTE);
+  generator::genCubemap("distanceFieldWater21600_0.tif", "distanceFieldWater21600_1.tif", GL_R16UI, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
 
   glfwTerminate();
   puts("Done");
