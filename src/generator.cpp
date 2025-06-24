@@ -89,15 +89,15 @@ void genCubemap(
   if (isTif) {
     switch (internalFormat) {
       case GL_R16I:
-        pixelsDiffuse0 = loadTif_R16I(path0Cstr, &texSize.x, &texSize.y, true);
-        pixelsDiffuse1 = loadTif_R16I(path1Cstr, &texSize.x, &texSize.y, true);
+        pixelsDiffuse0 = loadTif_R16I(path0Cstr, &texSize.x, &texSize.y);
+        pixelsDiffuse1 = loadTif_R16I(path1Cstr, &texSize.x, &texSize.y);
         channels = 1;
         tifDepth = 16;
         tifFormat = SAMPLEFORMAT_INT;
         break;
       case GL_R16UI:
-        pixelsDiffuse0 = loadTif_R16UI(path0Cstr, &texSize.x, &texSize.y, true);
-        pixelsDiffuse1 = loadTif_R16UI(path1Cstr, &texSize.x, &texSize.y, true);
+        pixelsDiffuse0 = loadTif_R16UI(path0Cstr, &texSize.x, &texSize.y);
+        pixelsDiffuse1 = loadTif_R16UI(path1Cstr, &texSize.x, &texSize.y);
         channels = 1;
         tifDepth = 16;
         tifFormat = SAMPLEFORMAT_UINT;
@@ -188,13 +188,11 @@ void genCubemap(
     glDispatchCompute(faceSize.x, faceSize.y, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glGetTexImage(GL_TEXTURE_2D, 0, readFormat, readDataType, outputPixels);
+    std::string filePath = ((folderName / orderv[i]).string() + path0.extension().string());
 
     if (isTif) {
-      bool flipVertically = orderv[i] == "bottom" || orderv[i] == "top";
-      std::string filePath = ((folderName / orderv[i]).string() + path0.extension().string());
-      saveTif(filePath.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, outputPixels, flipVertically);
+      saveTif(filePath.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, outputPixels, true);
     } else {
-      std::string filePath = ((folderName / orderv[i]).string() + path0.extension().string());
       if (!stbi_write_png(filePath.c_str(), faceSize.x, faceSize.y, channels, outputPixels, channels * faceSize.x))
         error("[genCubemap] stbi write returned 0 [{}]", filePath.c_str());
     }
@@ -213,7 +211,7 @@ void genCubemap(
     std::string filePath = ((folderName / orderh[i]).string() + path0.extension().string());
 
     if (isTif)
-      saveTif(filePath.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, outputPixels);
+      saveTif(filePath.c_str(), faceSize.x, faceSize.y, channels, tifDepth, tifFormat, outputPixels, true);
     else
       if (!stbi_write_png(filePath.c_str(), faceSize.x, faceSize.y, channels, outputPixels, channels * faceSize.x))
         error("[genCubemap] stbi write returned 0 [{}]", filePath.c_str());

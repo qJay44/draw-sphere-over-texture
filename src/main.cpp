@@ -77,9 +77,12 @@ int main() {
   printf("Work group local count: [x: %d, y: %d, z: %d]\n", lgCountX, lgCountY, lgCountZ);
 
   // generator::genCubemapOnPlane("wem2560.png")
+  generator::genCubemap("bathymetry21600_0.tif", "bathymetry21600_1.tif", GL_R16I, GL_RED_INTEGER, GL_SHORT);
+  // generator::genCubemap("borders21600_0.png", "borders21600_1.png", GL_R8, GL_RED, GL_UNSIGNED_BYTE);
   // generator::genCubemap("distanceFieldWater21600_0.tif", "distanceFieldWater21600_1.tif", GL_R16UI, GL_RED_INTEGER, GL_UNSIGNED_SHORT);
-  // generator::genCubemap("bathymetry21600_0.tif", "bathymetry21600_1.tif", GL_R16I, GL_RED_INTEGER, GL_SHORT);
-  generator::genCubemap("worldColors21600_0.png", "worldColors21600_1.png", GL_RGBA8, GL_RGB, GL_UNSIGNED_BYTE);
+  // generator::genCubemap("heightmapLand21600_0.png", "heightmapLand21600_1.png", GL_R8, GL_RED, GL_UNSIGNED_BYTE);
+  // generator::genCubemap("normalheightmap21600_5_0.png", "normalheightmap21600_5_1.png", GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
+  // generator::genCubemap("worldColors21600_0.png", "worldColors21600_1.png", GL_RGBA8, GL_RGB, GL_UNSIGNED_BYTE);
 
   glfwTerminate();
   puts("Done");
