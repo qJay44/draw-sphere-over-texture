@@ -169,8 +169,8 @@ void genCubemap(
   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, faceSize.x, faceSize.y, 0, readFormat, readDataType, NULL);
   glBindImageTexture(0, face, 0, GL_FALSE, 0, GL_WRITE_ONLY, internalFormat);
 
-  static constexpr std::string orderv[3] = {"bottom", "front", "top"};
-  static constexpr std::string orderh[4] = {"front", "right", "back", "left"};
+  static constexpr std::string orderv[3] = {"top", "front", "bottom"};
+  static constexpr std::string orderh[4] = {"left", "front", "right", "back"};
 
   std::string fileName = path0.stem().string();
   fileName.erase(fileName.length() - 2); // Remove split number
@@ -180,6 +180,8 @@ void genCubemap(
   // vertical
   status::start("Converting to vertical face:  ", orderv[0]);
   for (GLuint i = 0; i < 3; i++) {
+    if (i == 1) continue;
+
     status::update(orderv[i]);
     vcubemapShader.setUniform2ui("offset", {0u, faceSize.x * i});
     vcubemapShader.setUniform1ui("face", i);

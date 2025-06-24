@@ -21,9 +21,9 @@ void main() {
   float a = 2.f * (actualCoord.x + edge * 2) / edge;
   float b = 2.f * actualCoord.y / edge;
   vec3 points[3] = vec3[3](
-    vec3(b - 1.f, a - 5.f, 1.f), // top
+    vec3(5.f - a, 1.f - b, 1.f), // top
     vec3(1.f, a - 5.f, 3.f - b), // front
-    vec3(5.f - b, a - 5.f, -1.f) // bottom
+    vec3(5.f - a, b - 5.f, -1.f) // bottom
   );
   vec3 p = points[face];
   float theta = atan(p.y, p.x);

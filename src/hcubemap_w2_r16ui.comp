@@ -21,10 +21,10 @@ void main() {
   float a = 2.f * actualCoord.x / edge;
   float b = 2.f * (actualCoord.y + edge) / edge;
   vec3 points[4] = vec3[4](
-    vec3(-1.f, 1.f - a, 3.f - b), // back
-    vec3(a - 3.f, -1.f, 3.f - b), // left
-    vec3(1.f, a - 5.f, 3.f - b),  // front
-    vec3(7.f - a, 1.f, 3.f - b)   // right
+    vec3(-1.f, 1.f - a, 3.f - b), // left
+    vec3(a - 3.f, -1.f, 3.f - b), // front
+    vec3(1.f, a - 5.f, 3.f - b),  // right
+    vec3(7.f - a, 1.f, 3.f - b)   // back
   );
   vec3 p = points[face];
   float theta = atan(p.y, p.x);
